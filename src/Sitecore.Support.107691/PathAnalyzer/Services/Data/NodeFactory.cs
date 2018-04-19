@@ -24,7 +24,7 @@ namespace Sitecore.Support.PathAnalyzer.Services.Data
     private readonly IItemRepository _itemRepository;
     private readonly IResourceManager _resourceManager;
     #region Modified code
-    //The cache should include both ID and Name of the node, or the all wildcard items will have the same name
+    // The cache should include both ID and Name of the node, or the all wildcard items will have the same name
     private readonly Dictionary<string, string> nodeNameCache = new Dictionary<string, string>();
     #endregion
     private static readonly NodeNameResolvingMode NameResolvingMode = ApiContainer.GetSettings().NodeNameResolvingMode;
@@ -178,7 +178,7 @@ namespace Sitecore.Support.PathAnalyzer.Services.Data
       }
 
       #region Modified code
-      // Update the cache to use string intead of ID
+      // Update the cache to use string intead of ID, because the node name is now included as a cache key
       if (this.nodeNameCache.ContainsKey(node.RecordId.ToString() + node.Name))
       {
         return this.nodeNameCache[node.RecordId.ToString() + node.Name];
@@ -188,7 +188,7 @@ namespace Sitecore.Support.PathAnalyzer.Services.Data
 
       // do not cache not found nodes since their names may be different
       #region Modified code
-      // Update the cache to use string intead of ID
+      // Update the cache to use string intead of ID, because the node name is now included as a cache key
       if (node.RecordId != Guid.Empty)
       {
         this.nodeNameCache.Add(node.RecordId.ToString() + node.Name, nodeName);
@@ -247,7 +247,8 @@ namespace Sitecore.Support.PathAnalyzer.Services.Data
       if (item.Name != "*")
       {
         return item.Name;
-      } else
+      }
+      else
       {
         // use a part of URL instead of name. Also need to remove the "/" symbol for consistent item names
         return new Uri("http://localhost" + node.Name).Segments.LastOrDefault().Replace("/", "");
