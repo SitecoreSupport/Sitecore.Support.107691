@@ -23,7 +23,10 @@ namespace Sitecore.Support.PathAnalyzer.Services.Data
   {
     private readonly IItemRepository _itemRepository;
     private readonly IResourceManager _resourceManager;
-    private readonly Dictionary<Guid, string> nodeNameCache = new Dictionary<Guid, string>();
+    #region Modified code
+    //The cache should include both ID and Name of the node, or the all wildcard items will have the same name
+    private readonly Dictionary<string, string> nodeNameCache = new Dictionary<string, string>();
+    #endregion
     private static readonly NodeNameResolvingMode NameResolvingMode = ApiContainer.GetSettings().NodeNameResolvingMode;
 
     /// <summary>
@@ -174,19 +177,23 @@ namespace Sitecore.Support.PathAnalyzer.Services.Data
         return Localizer.ResourceManager.Translate(PathAnalyzerTexts.Internet);
       }
 
-      if (nodeNameCache.ContainsKey(node.RecordId))
+      #region Modified code
+      // Update the cache to use string intead of ID
+      if (this.nodeNameCache.ContainsKey(node.RecordId.ToString() + node.Name))
       {
-        return nodeNameCache[node.RecordId];
+        return this.nodeNameCache[node.RecordId.ToString() + node.Name];
       }
-
+      #endregion
       var nodeName = ResolveNodeName(node);
 
       // do not cache not found nodes since their names may be different
+      #region Modified code
+      // Update the cache to use string intead of ID
       if (node.RecordId != Guid.Empty)
       {
-        nodeNameCache.Add(node.RecordId, nodeName);
+        this.nodeNameCache.Add(node.RecordId.ToString() + node.Name, nodeName);
       }
-
+      #endregion
       var groupSuffix = string.Empty;
       if (node.IsGroupedNode && (node.MergedNodeCount > 1))
       {
@@ -229,8 +236,23 @@ namespace Sitecore.Support.PathAnalyzer.Services.Data
 
     private string ResolveNodeNameFromItem([NotNull]Node node)
     {
+      #region Modified code
       var item = GetNodeItem(node);
-      return item != null ? item.Name : ResolveFromRawNodeName(node);
+      if (item == null)
+      {
+        return this.ResolveFromRawNodeName(node);
+      }
+
+      // check if it is a wildcard item
+      if (item.Name != "*")
+      {
+        return item.Name;
+      } else
+      {
+        // use a part of URL instead of name. Also need to remove the "/" symbol for consistent item names
+        return new Uri("http://localhost" + node.Name).Segments.LastOrDefault().Replace("/", "");
+      }
+      #endregion
     }
 
     private Item GetNodeItem([NotNull]Node node)
